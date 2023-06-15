@@ -1,0 +1,9 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: dockerfile
+    volumes:
+      - './personal_finance:/app/personal_finance'
+    ports:
+      - '8000:8000'
