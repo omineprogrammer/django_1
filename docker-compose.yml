@@ -1,0 +1,65 @@
+services:
+  web-service: &service_web-service
+    build:
+      context: .
+      dockerfile: dockerfile
+    env_file:
+      - web-service.env
+    volumes:
+      - './personal_finance:/app/personal_finance'
+    hostname: web-server-container
+    ports:
+      - '8000:8000'
+    networks:
+      - database
+    depends_on:
+      database:
+        condition: service_healthy
+      web-service-migrations:
+        condition: service_completed_successfully
+      web-service-create-superuser:
+        condition: service_completed_successfully
+
+  web-service-migrations:
+    <<: *service_web-service
+    depends_on:
+      database:
+        condition: service_healthy
+    command: migrate
+
+  web-service-create-superuser:
+    <<: *service_web-service
+    env_file:
+      - web-service.env
+    depends_on:
+      database:
+        condition: service_healthy
+      web-service-migrations:
+        condition: service_completed_successfully
+    command: createsuperuser --noinput
+
+  database:
+    image: postgres:15.3-alpine3.18
+    restart: always
+    env_file:
+      - database.env
+    user: root
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    hostname: database-container
+    ports:
+      - 5432:5432
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 1s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+
+networks:
+  database:
+    name: database
