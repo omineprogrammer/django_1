@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: dockerfile
+    env_file:
+      - web-service.env
     volumes:
       - './personal_finance:/app/personal_finance'
     hostname: web-server-container
@@ -15,6 +17,8 @@ services:
         condition: service_healthy
       web-service-migrations:
         condition: service_completed_successfully
+      web-service-create-superuser:
+        condition: service_completed_successfully
 
   web-service-migrations:
     <<: *service_web-service
@@ -23,11 +27,22 @@ services:
         condition: service_healthy
     command: migrate
 
+  web-service-create-superuser:
+    <<: *service_web-service
+    env_file:
+      - web-service.env
+    depends_on:
+      database:
+        condition: service_healthy
+      web-service-migrations:
+        condition: service_completed_successfully
+    command: createsuperuser --noinput
+
   database:
     image: postgres:15.3-alpine3.18
     restart: always
     env_file:
-      - .env
+      - database.env
     user: root
     volumes:
       - pgdata:/var/lib/postgresql/data
