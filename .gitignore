@@ -160,5 +160,5 @@ cython_debug/
 #.idea/
 
 # enviroment config sensitive
-.env
+*.env
 .pg_pass
